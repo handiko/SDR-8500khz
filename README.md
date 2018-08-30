@@ -11,7 +11,3 @@ info : https://labsdl.wordpress.com/2018/08/30/gnu-radio-tips-how-to-convert-wav
 
 
 
-
-
-Handiko, YD1SDL 
-2018
