@@ -5,7 +5,7 @@
 # Title: HF FSK RX
 # Author: Handiko Gesang
 # Description: Implement Zeroth OSI Layer for Receiving HF FSK
-# Generated: Thu Aug 30 18:27:52 2018
+# Generated: Thu Aug 30 19:08:16 2018
 ##################################################
 
 if __name__ == '__main__':
@@ -33,8 +33,10 @@ from gnuradio.qtgui import Range, RangeWidget
 from grc_gnuradio import blks2 as grc_blks2
 from optparse import OptionParser
 import math
+import osmosdr
 import sip
 import sys
+import time
 
 
 class hf_fsk_rx1(gr.top_block, Qt.QWidget):
@@ -73,10 +75,10 @@ class hf_fsk_rx1(gr.top_block, Qt.QWidget):
         ##################################################
         self.vfo = vfo = 37.9e3
         self.rit = rit = 0
+        self.osmocom_input = osmocom_input = "file="+filename+".raw,rate="+str(samp_rate)+",repeat=True,throttle=False"
         self.low_cut = low_cut = 100
         self.intermediate_rate = intermediate_rate = 192e3
         self.hi_cut = hi_cut = 3000
-        self.flip = flip = 1
         self.cfreq = cfreq = 8.5e6
         self.bb_rate = bb_rate = 24e3
         self.af_filter = af_filter = False
@@ -125,6 +127,42 @@ class hf_fsk_rx1(gr.top_block, Qt.QWidget):
         self._af_filter_callback(self.af_filter)
         _af_filter_check_box.stateChanged.connect(lambda i: self.set_af_filter(self._af_filter_choices[bool(i)]))
         self.tab_grid_layout_2.addWidget(_af_filter_check_box, 0,1,1,1)
+        self.qtgui_waterfall_sink_x_0_0 = qtgui.waterfall_sink_c(
+        	8192, #size
+        	firdes.WIN_BLACKMAN_hARRIS, #wintype
+        	cfreq+vfo+rit, #fc
+        	bb_rate, #bw
+        	"", #name
+                1 #number of inputs
+        )
+        self.qtgui_waterfall_sink_x_0_0.set_update_time(0.05)
+        self.qtgui_waterfall_sink_x_0_0.enable_grid(False)
+        self.qtgui_waterfall_sink_x_0_0.enable_axis_labels(True)
+        
+        if not False:
+          self.qtgui_waterfall_sink_x_0_0.disable_legend()
+        
+        if "complex" == "float" or "complex" == "msg_float":
+          self.qtgui_waterfall_sink_x_0_0.set_plot_pos_half(not True)
+        
+        labels = ['', '', '', '', '',
+                  '', '', '', '', '']
+        colors = [3, 0, 0, 0, 0,
+                  0, 0, 0, 0, 0]
+        alphas = [1.0, 1.0, 1.0, 1.0, 1.0,
+                  1.0, 1.0, 1.0, 1.0, 1.0]
+        for i in xrange(1):
+            if len(labels[i]) == 0:
+                self.qtgui_waterfall_sink_x_0_0.set_line_label(i, "Data {0}".format(i))
+            else:
+                self.qtgui_waterfall_sink_x_0_0.set_line_label(i, labels[i])
+            self.qtgui_waterfall_sink_x_0_0.set_color_map(i, colors[i])
+            self.qtgui_waterfall_sink_x_0_0.set_line_alpha(i, alphas[i])
+        
+        self.qtgui_waterfall_sink_x_0_0.set_intensity_range(-170, -100)
+        
+        self._qtgui_waterfall_sink_x_0_0_win = sip.wrapinstance(self.qtgui_waterfall_sink_x_0_0.pyqwidget(), Qt.QWidget)
+        self.tab_grid_layout_1.addWidget(self._qtgui_waterfall_sink_x_0_0_win, 1,0,1,1)
         self.qtgui_waterfall_sink_x_0 = qtgui.waterfall_sink_c(
         	8192, #size
         	firdes.WIN_BLACKMAN_hARRIS, #wintype
@@ -161,29 +199,29 @@ class hf_fsk_rx1(gr.top_block, Qt.QWidget):
         
         self._qtgui_waterfall_sink_x_0_win = sip.wrapinstance(self.qtgui_waterfall_sink_x_0.pyqwidget(), Qt.QWidget)
         self.tab_grid_layout_0.addWidget(self._qtgui_waterfall_sink_x_0_win, 1,0,1,1)
-        self.qtgui_freq_sink_x_0_0_0 = qtgui.freq_sink_f(
+        self.qtgui_freq_sink_x_0_0 = qtgui.freq_sink_c(
         	2048, #size
         	firdes.WIN_BLACKMAN_hARRIS, #wintype
-        	0, #fc
+        	cfreq+vfo+rit, #fc
         	bb_rate, #bw
         	"", #name
         	1 #number of inputs
         )
-        self.qtgui_freq_sink_x_0_0_0.set_update_time(0.1)
-        self.qtgui_freq_sink_x_0_0_0.set_y_axis(-90, -10)
-        self.qtgui_freq_sink_x_0_0_0.set_y_label('Relative Gain', 'dB')
-        self.qtgui_freq_sink_x_0_0_0.set_trigger_mode(qtgui.TRIG_MODE_FREE, 0.0, 0, "")
-        self.qtgui_freq_sink_x_0_0_0.enable_autoscale(False)
-        self.qtgui_freq_sink_x_0_0_0.enable_grid(True)
-        self.qtgui_freq_sink_x_0_0_0.set_fft_average(0.2)
-        self.qtgui_freq_sink_x_0_0_0.enable_axis_labels(True)
-        self.qtgui_freq_sink_x_0_0_0.enable_control_panel(False)
+        self.qtgui_freq_sink_x_0_0.set_update_time(0.05)
+        self.qtgui_freq_sink_x_0_0.set_y_axis(-150, -90)
+        self.qtgui_freq_sink_x_0_0.set_y_label('Relative Gain', 'dB')
+        self.qtgui_freq_sink_x_0_0.set_trigger_mode(qtgui.TRIG_MODE_FREE, 0.0, 0, "")
+        self.qtgui_freq_sink_x_0_0.enable_autoscale(False)
+        self.qtgui_freq_sink_x_0_0.enable_grid(True)
+        self.qtgui_freq_sink_x_0_0.set_fft_average(0.2)
+        self.qtgui_freq_sink_x_0_0.enable_axis_labels(True)
+        self.qtgui_freq_sink_x_0_0.enable_control_panel(False)
         
         if not False:
-          self.qtgui_freq_sink_x_0_0_0.disable_legend()
+          self.qtgui_freq_sink_x_0_0.disable_legend()
         
-        if "float" == "float" or "float" == "msg_float":
-          self.qtgui_freq_sink_x_0_0_0.set_plot_pos_half(not False)
+        if "complex" == "float" or "complex" == "msg_float":
+          self.qtgui_freq_sink_x_0_0.set_plot_pos_half(not True)
         
         labels = ['', '', '', '', '',
                   '', '', '', '', '']
@@ -195,15 +233,15 @@ class hf_fsk_rx1(gr.top_block, Qt.QWidget):
                   1.0, 1.0, 1.0, 1.0, 1.0]
         for i in xrange(1):
             if len(labels[i]) == 0:
-                self.qtgui_freq_sink_x_0_0_0.set_line_label(i, "Data {0}".format(i))
+                self.qtgui_freq_sink_x_0_0.set_line_label(i, "Data {0}".format(i))
             else:
-                self.qtgui_freq_sink_x_0_0_0.set_line_label(i, labels[i])
-            self.qtgui_freq_sink_x_0_0_0.set_line_width(i, widths[i])
-            self.qtgui_freq_sink_x_0_0_0.set_line_color(i, colors[i])
-            self.qtgui_freq_sink_x_0_0_0.set_line_alpha(i, alphas[i])
+                self.qtgui_freq_sink_x_0_0.set_line_label(i, labels[i])
+            self.qtgui_freq_sink_x_0_0.set_line_width(i, widths[i])
+            self.qtgui_freq_sink_x_0_0.set_line_color(i, colors[i])
+            self.qtgui_freq_sink_x_0_0.set_line_alpha(i, alphas[i])
         
-        self._qtgui_freq_sink_x_0_0_0_win = sip.wrapinstance(self.qtgui_freq_sink_x_0_0_0.pyqwidget(), Qt.QWidget)
-        self.tab_grid_layout_2.addWidget(self._qtgui_freq_sink_x_0_0_0_win, 0,0,3,1)
+        self._qtgui_freq_sink_x_0_0_win = sip.wrapinstance(self.qtgui_freq_sink_x_0_0.pyqwidget(), Qt.QWidget)
+        self.tab_grid_layout_1.addWidget(self._qtgui_freq_sink_x_0_0_win, 0,0,1,1)
         self.qtgui_freq_sink_x_0 = qtgui.freq_sink_c(
         	2048, #size
         	firdes.WIN_BLACKMAN_hARRIS, #wintype
@@ -259,12 +297,24 @@ class hf_fsk_rx1(gr.top_block, Qt.QWidget):
         	  flt_size=16)
         self.pfb_arb_resampler_xxx_0.declare_sample_delay(0)
         	
+        self.osmosdr_source_0 = osmosdr.source( args="numchan=" + str(1) + " " + osmocom_input )
+        self.osmosdr_source_0.set_sample_rate(samp_rate)
+        self.osmosdr_source_0.set_center_freq(0, 0)
+        self.osmosdr_source_0.set_freq_corr(0, 0)
+        self.osmosdr_source_0.set_dc_offset_mode(0, 0)
+        self.osmosdr_source_0.set_iq_balance_mode(0, 0)
+        self.osmosdr_source_0.set_gain_mode(False, 0)
+        self.osmosdr_source_0.set_gain(10, 0)
+        self.osmosdr_source_0.set_if_gain(20, 0)
+        self.osmosdr_source_0.set_bb_gain(20, 0)
+        self.osmosdr_source_0.set_antenna('', 0)
+        self.osmosdr_source_0.set_bandwidth(0, 0)
+          
         self.fft_filter_xxx_0 = filter.fft_filter_ccc(1, (firdes.complex_band_pass(2,bb_rate,low_cut,hi_cut,bb_rate/20,firdes.WIN_BLACKMAN)), 1)
         self.fft_filter_xxx_0.declare_sample_delay(0)
-        self.blocks_wavfile_source_0 = blocks.wavfile_source(filename, True)
         self.blocks_rotator_cc_2 = blocks.rotator_cc(1.5e3*2*math.pi/bb_rate)
         self.blocks_rotator_cc_0 = blocks.rotator_cc(-(vfo+rit)*2*math.pi/samp_rate)
-        self.blocks_float_to_complex_0 = blocks.float_to_complex(1)
+        self.blocks_null_sink_0 = blocks.null_sink(gr.sizeof_float*1)
         self.blocks_complex_to_real_0 = blocks.complex_to_real(1)
         self.blks2_selector_1 = grc_blks2.selector(
         	item_size=gr.sizeof_gr_complex*1,
@@ -292,17 +342,17 @@ class hf_fsk_rx1(gr.top_block, Qt.QWidget):
         self.connect((self.blks2_selector_0, 0), (self.fft_filter_xxx_0, 0))    
         self.connect((self.blks2_selector_1, 0), (self.blocks_complex_to_real_0, 0))    
         self.connect((self.blocks_complex_to_real_0, 0), (self.audio_sink_0, 0))    
-        self.connect((self.blocks_complex_to_real_0, 0), (self.qtgui_freq_sink_x_0_0_0, 0))    
-        self.connect((self.blocks_float_to_complex_0, 0), (self.blocks_rotator_cc_0, 0))    
+        self.connect((self.blocks_complex_to_real_0, 0), (self.blocks_null_sink_0, 0))    
         self.connect((self.blocks_rotator_cc_0, 0), (self.pfb_arb_resampler_xxx_0, 0))    
         self.connect((self.blocks_rotator_cc_0, 0), (self.pfb_arb_resampler_xxx_0_0, 0))    
         self.connect((self.blocks_rotator_cc_2, 0), (self.analog_agc_xx_0, 0))    
-        self.connect((self.blocks_wavfile_source_0, 0), (self.blocks_float_to_complex_0, 0))    
-        self.connect((self.blocks_wavfile_source_0, 1), (self.blocks_float_to_complex_0, 1))    
         self.connect((self.fft_filter_xxx_0, 0), (self.blks2_selector_1, 0))    
+        self.connect((self.osmosdr_source_0, 0), (self.blocks_rotator_cc_0, 0))    
         self.connect((self.pfb_arb_resampler_xxx_0, 0), (self.qtgui_freq_sink_x_0, 0))    
         self.connect((self.pfb_arb_resampler_xxx_0, 0), (self.qtgui_waterfall_sink_x_0, 0))    
         self.connect((self.pfb_arb_resampler_xxx_0_0, 0), (self.blocks_rotator_cc_2, 0))    
+        self.connect((self.pfb_arb_resampler_xxx_0_0, 0), (self.qtgui_freq_sink_x_0_0, 0))    
+        self.connect((self.pfb_arb_resampler_xxx_0_0, 0), (self.qtgui_waterfall_sink_x_0_0, 0))    
 
     def closeEvent(self, event):
         self.settings = Qt.QSettings("GNU Radio", "hf_fsk_rx1")
@@ -314,14 +364,17 @@ class hf_fsk_rx1(gr.top_block, Qt.QWidget):
 
     def set_filename(self, filename):
         self.filename = filename
+        self.set_osmocom_input("file="+self.filename+".raw,rate="+str(self.samp_rate)+",repeat=True,throttle=False")
 
     def get_samp_rate(self):
         return self.samp_rate
 
     def set_samp_rate(self, samp_rate):
         self.samp_rate = samp_rate
+        self.set_osmocom_input("file="+self.filename+".raw,rate="+str(self.samp_rate)+",repeat=True,throttle=False")
         self.pfb_arb_resampler_xxx_0_0.set_rate(self.bb_rate/self.samp_rate)
         self.pfb_arb_resampler_xxx_0.set_rate(self.intermediate_rate/self.samp_rate)
+        self.osmosdr_source_0.set_sample_rate(self.samp_rate)
         self.blocks_rotator_cc_0.set_phase_inc(-(self.vfo+self.rit)*2*math.pi/self.samp_rate)
 
     def get_vfo(self):
@@ -329,7 +382,9 @@ class hf_fsk_rx1(gr.top_block, Qt.QWidget):
 
     def set_vfo(self, vfo):
         self.vfo = vfo
+        self.qtgui_waterfall_sink_x_0_0.set_frequency_range(self.cfreq+self.vfo+self.rit, self.bb_rate)
         self.qtgui_waterfall_sink_x_0.set_frequency_range(self.cfreq+self.vfo+self.rit, self.intermediate_rate)
+        self.qtgui_freq_sink_x_0_0.set_frequency_range(self.cfreq+self.vfo+self.rit, self.bb_rate)
         self.qtgui_freq_sink_x_0.set_frequency_range(self.cfreq+self.vfo+self.rit, self.intermediate_rate)
         self.blocks_rotator_cc_0.set_phase_inc(-(self.vfo+self.rit)*2*math.pi/self.samp_rate)
 
@@ -338,9 +393,17 @@ class hf_fsk_rx1(gr.top_block, Qt.QWidget):
 
     def set_rit(self, rit):
         self.rit = rit
+        self.qtgui_waterfall_sink_x_0_0.set_frequency_range(self.cfreq+self.vfo+self.rit, self.bb_rate)
         self.qtgui_waterfall_sink_x_0.set_frequency_range(self.cfreq+self.vfo+self.rit, self.intermediate_rate)
+        self.qtgui_freq_sink_x_0_0.set_frequency_range(self.cfreq+self.vfo+self.rit, self.bb_rate)
         self.qtgui_freq_sink_x_0.set_frequency_range(self.cfreq+self.vfo+self.rit, self.intermediate_rate)
         self.blocks_rotator_cc_0.set_phase_inc(-(self.vfo+self.rit)*2*math.pi/self.samp_rate)
+
+    def get_osmocom_input(self):
+        return self.osmocom_input
+
+    def set_osmocom_input(self, osmocom_input):
+        self.osmocom_input = osmocom_input
 
     def get_low_cut(self):
         return self.low_cut
@@ -365,18 +428,14 @@ class hf_fsk_rx1(gr.top_block, Qt.QWidget):
         self.hi_cut = hi_cut
         self.fft_filter_xxx_0.set_taps((firdes.complex_band_pass(2,self.bb_rate,self.low_cut,self.hi_cut,self.bb_rate/20,firdes.WIN_BLACKMAN)))
 
-    def get_flip(self):
-        return self.flip
-
-    def set_flip(self, flip):
-        self.flip = flip
-
     def get_cfreq(self):
         return self.cfreq
 
     def set_cfreq(self, cfreq):
         self.cfreq = cfreq
+        self.qtgui_waterfall_sink_x_0_0.set_frequency_range(self.cfreq+self.vfo+self.rit, self.bb_rate)
         self.qtgui_waterfall_sink_x_0.set_frequency_range(self.cfreq+self.vfo+self.rit, self.intermediate_rate)
+        self.qtgui_freq_sink_x_0_0.set_frequency_range(self.cfreq+self.vfo+self.rit, self.bb_rate)
         self.qtgui_freq_sink_x_0.set_frequency_range(self.cfreq+self.vfo+self.rit, self.intermediate_rate)
 
     def get_bb_rate(self):
@@ -384,7 +443,8 @@ class hf_fsk_rx1(gr.top_block, Qt.QWidget):
 
     def set_bb_rate(self, bb_rate):
         self.bb_rate = bb_rate
-        self.qtgui_freq_sink_x_0_0_0.set_frequency_range(0, self.bb_rate)
+        self.qtgui_waterfall_sink_x_0_0.set_frequency_range(self.cfreq+self.vfo+self.rit, self.bb_rate)
+        self.qtgui_freq_sink_x_0_0.set_frequency_range(self.cfreq+self.vfo+self.rit, self.bb_rate)
         self.pfb_arb_resampler_xxx_0_0.set_rate(self.bb_rate/self.samp_rate)
         self.fft_filter_xxx_0.set_taps((firdes.complex_band_pass(2,self.bb_rate,self.low_cut,self.hi_cut,self.bb_rate/20,firdes.WIN_BLACKMAN)))
         self.blocks_rotator_cc_2.set_phase_inc(1.5e3*2*math.pi/self.bb_rate)
